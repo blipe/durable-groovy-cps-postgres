@@ -1,2 +1,3 @@
 # durable-groovy-cps-postgres
-durable-groovy-cps-postgres
+
+durable Groovy CPS workflow engine with PostgreSQL durability.
