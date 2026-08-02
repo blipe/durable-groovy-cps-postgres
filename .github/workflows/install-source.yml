@@ -3,6 +3,8 @@ name: Install complete source tree
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
