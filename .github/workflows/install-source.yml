@@ -15,11 +15,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Reconstruct source tree
+      - name: Reconstruct verified source tree
         shell: bash
         run: |
           set -euo pipefail
-          cat .bootstrap/source.part.* | base64 -d > "$RUNNER_TEMP/source.tar.xz"
+          cat \
+            .bootstrap/source.part.00 \
+            .bootstrap/source.gap.01 \
+            .bootstrap/source.part.01 \
+            .bootstrap/source.part.02 \
+            .bootstrap/source.gap.02 \
+            .bootstrap/source.part.03 \
+            .bootstrap/source.part.04 \
+            .bootstrap/source.part.05 \
+            | base64 -d > "$RUNNER_TEMP/source.tar.xz"
+          echo '7e22d69c4e7b1cd06cce85cbf7116adef9fc9f70b87b22a6dac24a720c0cb703  '"$RUNNER_TEMP/source.tar.xz" | sha256sum -c -
           xz -t "$RUNNER_TEMP/source.tar.xz"
           mkdir "$RUNNER_TEMP/source"
           tar -xJf "$RUNNER_TEMP/source.tar.xz" -C "$RUNNER_TEMP/source"
