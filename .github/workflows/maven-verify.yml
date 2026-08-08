@@ -1,0 +1,40 @@
+name: Maven Verify
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Show Java and Maven versions
+        run: |
+          java -version
+          mvn --version
+      - name: Verify Maven Central and Jenkins repository access
+        run: |
+          set -euo pipefail
+          getent ahosts repo.maven.apache.org
+          curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+            --output /dev/null \
+            https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.12.2/junit-jupiter-5.12.2.pom
+          curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
+            --output /dev/null \
+            https://repo.jenkins-ci.org/public/com/cloudbees/groovy-cps/1.32/groovy-cps-1.32.pom
+          mvn --batch-mode --no-transfer-progress --errors dependency:get \
+            -Dartifact=com.cloudbees:groovy-cps:1.32 \
+            -DremoteRepositories=jenkins::default::https://repo.jenkins-ci.org/public/
+      - name: Clean verify
+        run: mvn --batch-mode --no-transfer-progress --errors clean verify
