@@ -35,6 +35,7 @@ jobs:
             https://repo.jenkins-ci.org/public/com/cloudbees/groovy-cps/1.32/groovy-cps-1.32.pom
           mvn --batch-mode --no-transfer-progress --errors dependency:get \
             -Dartifact=com.cloudbees:groovy-cps:1.32 \
+            -Dtransitive=false \
             -DremoteRepositories=jenkins::default::https://repo.jenkins-ci.org/public/
       - name: Clean verify
         run: mvn --batch-mode --no-transfer-progress --errors clean verify
