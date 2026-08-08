@@ -42,6 +42,13 @@
       <groupId>com.cloudbees</groupId>
       <artifactId>groovy-cps</artifactId>
       <version>${groovy-cps.version}</version>
+      <exclusions>
+        <!-- Build-time helper referenced by groovy-cps' published POM; not required by consumers. -->
+        <exclusion>
+          <groupId>com.cloudbees</groupId>
+          <artifactId>groovy-cps-dgm-builder</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <dependency>
@@ -110,21 +117,23 @@
           <excludedGroups>${surefire.excludedGroups}</excludedGroups>
         </configuration>
       </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>exec-maven-plugin</artifactId>
-        <version>3.5.0</version>
-      </plugin>
     </plugins>
   </build>
+
   <profiles>
     <profile>
-      <id>load-tests</id>
+      <id>postgres-it</id>
+      <properties>
+        <surefire.groups>postgres</surefire.groups>
+        <surefire.excludedGroups></surefire.excludedGroups>
+      </properties>
+    </profile>
+    <profile>
+      <id>load</id>
       <properties>
         <surefire.groups>load</surefire.groups>
         <surefire.excludedGroups></surefire.excludedGroups>
       </properties>
     </profile>
   </profiles>
-
 </project>
