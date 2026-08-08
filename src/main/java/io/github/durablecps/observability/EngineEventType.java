@@ -1,0 +1,15 @@
+package io.github.durablecps.observability;
+
+public enum EngineEventType {
+    POLL_FAILURE,
+    CLAIM_CONFLICT,
+    LEASE_LOST,
+    LISTENER_FAILURE,
+    DEFINITION_PREFLIGHT_WARNING,
+    SCHEMA_PREFLIGHT_WARNING,
+    MAINTENANCE_FAILURE,
+    RETENTION_ARCHIVED,
+    ENGINE_QUIESCING,
+    ENGINE_RESUMED,
+    ENGINE_CLOSED
+}
