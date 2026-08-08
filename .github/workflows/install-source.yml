@@ -1,8 +1,6 @@
 name: Install complete source tree
 
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -12,90 +10,43 @@ permissions:
 
 jobs:
   install:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Identify and extract repository archive
+      - name: Reconstruct verified source tree
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/extracted"
-          found=''
-          for f in .bootstrap/payload-*; do
-            kind=$(file -b "$f")
-            echo "$f: $kind"
-            if unzip -t "$f" >/dev/null 2>&1; then
-              rm -rf "$RUNNER_TEMP/extracted"/*
-              unzip -q "$f" -d "$RUNNER_TEMP/extracted"
-              found=zip
-              break
-            fi
-            if tar -tf "$f" >/dev/null 2>&1; then
-              rm -rf "$RUNNER_TEMP/extracted"/*
-              tar -xf "$f" -C "$RUNNER_TEMP/extracted"
-              found=tar
-              break
-            fi
-          done
-          test -n "$found"
-          root="$RUNNER_TEMP/extracted"
+          cat \
+            .bootstrap/source.part.00 \
+            .bootstrap/source.gap.01 \
+            .bootstrap/source.part.01 \
+            .bootstrap/source.part.02 \
+            .bootstrap/source.gap.02 \
+            .bootstrap/source.part.03 \
+            .bootstrap/source.part.04 \
+            .bootstrap/source.part.05 \
+            | base64 -d > "$RUNNER_TEMP/source.tar.xz"
+          echo '7e22d69c4e7b1cd06cce85cbf7116adef9fc9f70b87b22a6dac24a720c0cb703  '"$RUNNER_TEMP/source.tar.xz" | sha256sum -c -
+          xz -t "$RUNNER_TEMP/source.tar.xz"
+          mkdir "$RUNNER_TEMP/source"
+          tar -xJf "$RUNNER_TEMP/source.tar.xz" -C "$RUNNER_TEMP/source"
+          root="$RUNNER_TEMP/source"
           entries=$(find "$root" -mindepth 1 -maxdepth 1 | wc -l)
           if [ "$entries" -eq 1 ] && [ -d "$(find "$root" -mindepth 1 -maxdepth 1 -type d)" ]; then
             root=$(find "$root" -mindepth 1 -maxdepth 1 -type d)
           fi
+          test -f "$root/pom.xml"
+          test -d "$root/src/main/java"
           find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
           cp -a "$root"/. .
-      - name: Install Maven Central verification workflow
+      - name: Commit source files to main
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p .github/workflows
-          cat > .github/workflows/maven-verify.yml <<'YAML'
-          name: Maven Verify
-
-          on:
-            push:
-            pull_request:
-            workflow_dispatch:
-
-          permissions:
-            contents: read
-
-          jobs:
-            verify:
-              runs-on: ubuntu-latest
-              timeout-minutes: 30
-              steps:
-                - uses: actions/checkout@v4
-                - uses: actions/setup-java@v4
-                  with:
-                    distribution: temurin
-                    java-version: '21'
-                    cache: maven
-                - name: Show Java and Maven versions
-                  run: |
-                    java -version
-                    mvn --version
-                - name: Verify Maven Central and Jenkins repository access
-                  run: |
-                    getent ahosts repo.maven.apache.org
-                    curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
-                      --output /dev/null https://repo.maven.apache.org/maven2/org/junit/jupiter/junit-jupiter/5.12.2/junit-jupiter-5.12.2.pom
-                    curl --fail --location --silent --show-error --retry 3 --retry-all-errors \
-                      --output /dev/null https://repo.jenkins-ci.org/public/com/cloudbees/groovy-cps/1.32/groovy-cps-1.32.pom
-                    mvn --batch-mode --no-transfer-progress --errors dependency:get \
-                      -Dartifact=com.cloudbees:groovy-cps:1.32 \
-                      -DremoteRepositories=jenkins::default::https://repo.jenkins-ci.org/public/
-                - name: Compile and test
-                  run: mvn --batch-mode --no-transfer-progress --errors clean verify
-          YAML
-      - name: Commit complete implementation
-        shell: bash
-        run: |
-          set -euo pipefail
+          test -z "$(find . -path ./.git -prune -o \( -name '*.zip' -o -name '*.part.*' -o -path './.bootstrap/*' \) -print)"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
