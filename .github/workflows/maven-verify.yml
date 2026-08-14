@@ -1,3 +1,4 @@
+# Verification workflow modeled after blipe/maven-central-network-test.
 name: Maven Verify
 
 on:
